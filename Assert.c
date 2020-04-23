@@ -1,7 +1,6 @@
 #include "Assert.h"
 
 ASSERT* MyAssert;
-int nWinMode;
 int index = 0;
 int CountAssert;
 
