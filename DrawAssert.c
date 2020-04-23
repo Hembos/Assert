@@ -1,39 +1,19 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "Header.h"
+#include "Assert.h"
 #include <string.h>
 
+HINSTANCE hPrevInst;
+LPSTR lpszArgs;
+int nWinMode;
 HWND hBtnIgnore;
 HWND hBtnIgnoreAll;
 HWND hBtnAbort;
 HINSTANCE hInst;
-char* FileName;
-int NumberLine;
-int return_value;
-char* Message;
-int Ign = 0;
-ASSERT* tmpAssert;
-
-
-ASSERT* Temp(ASSERT* MyAssert, BOOL FatalError)
-{
-	if (Ign == 1 && FatalError == FALSE)
-	{
-		for (int i = 0; i < MyAssert->CountAssert; i++)
-		{
-			MyAssert[i].ignore = TRUE;
-		}
-		return tmpAssert;
-	}
-	else
-	{
-		FileName = MyAssert[MyAssert->index].FileName;
-		NumberLine = MyAssert[MyAssert->index].NumberLine;
-		Message = MyAssert[MyAssert->index].message;
-		return_value = MyAssert[MyAssert->index].return_value;
-		tmpAssert = MyAssert;
-	}
-}
+int CountAsserts;
+int ind;
+int returnValue;
+ASSERT* Assert;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -51,22 +31,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		if (lParam == (LPARAM)hBtnIgnoreAll)
 		{
-			Ign = 1;
-			Temp(tmpAssert, FALSE);
+			for (int i = 0; i < CountAsserts; i++)
+			{
+				Assert[i].ignore = TRUE;
+			}
+			
 			DestroyWindow(hWnd);
 			PostQuitMessage(0);
 		}
 		break;
 	case WM_CREATE:
-		hBtnIgnore = CreateWindow("button", "Èãíîðèðîâàòü",
+		hBtnIgnore = CreateWindow("button", "Ð˜Ð³Ð½Ð¾Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ",
 			WS_CHILD | WS_VISIBLE | WS_BORDER,
 			10, 200, 120, 30, hWnd, 0, hInst, NULL);
 		ShowWindow(hBtnIgnore, SW_SHOWNORMAL);
-		hBtnIgnoreAll = CreateWindow("button", "Èãíîðèðîâàòü âñå",
+		hBtnIgnoreAll = CreateWindow("button", "Ð˜Ð³Ð½Ð¾Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð²ÑÐµ",
 			WS_CHILD | WS_VISIBLE | WS_BORDER,
 			150, 200, 130, 30, hWnd, 0, hInst, NULL);
 		ShowWindow(hBtnIgnoreAll, SW_SHOWNORMAL);
-		hBtnAbort = CreateWindow("button", "Ïðåðâàòü",
+		hBtnAbort = CreateWindow("button", "ÐŸÑ€ÐµÑ€Ð²Ð°Ñ‚ÑŒ",
 			WS_CHILD | WS_VISIBLE | WS_BORDER,
 			300, 200, 120, 30, hWnd, 0, hInst, NULL);
 		ShowWindow(hBtnAbort, SW_SHOWNORMAL);
@@ -81,14 +64,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		TextOutA(hdc, 10, 10, "FILE : ", strlen("FILE : "));
-		TextOutA(hdc, 50, 10, FileName, strlen(FileName));
+		TextOutA(hdc, 50, 10, Assert[ind].FileName, strlen(Assert[ind].FileName));
 
 		char Num[100];
-		_itoa(NumberLine, Num, 100);
+		_itoa(Assert[ind].NumberLine, Num, 100);
 		TextOutA(hdc, 10, 30, "LINE : ", strlen("LINE : "));
 		TextOutA(hdc, 50, 30, Num, strlen(Num));
 
-		TextOutA(hdc, 10, 50, Message, strlen(Message));
+		TextOutA(hdc, 10, 50,Assert[ind].message, strlen(Assert[ind].message));
 		
 		EndPaint(hWnd, &ps);
 	}
@@ -96,11 +79,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-int WINAPI WinAssert(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpszCmdParam, _In_ int nCmdShow)
+void CreateAssertWindow(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpszCmdParam, _In_ int nCmdShow)
 {
 	WNDCLASS w;
 	HWND As;
-	
 	w.cbClsExtra = w.cbWndExtra = 0;
 	w.style = 0;
 	w.lpfnWndProc = WndProc;
@@ -117,8 +99,6 @@ int WINAPI WinAssert(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	ShowWindow(As, SW_NORMAL);
 	UpdateWindow(As);
 
-	Ign = 0;
-
 	MSG msg;
 	while (GetMessage(&msg, 0, 0, 0))
 	{
@@ -128,6 +108,14 @@ int WINAPI WinAssert(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	return msg.wParam;
 }
 
+int WINAPI WinAssert(ASSERT* MyAssert, int CountAssert, int index)
+{
+	Assert = MyAssert;
+	CountAsserts = CountAssert;
+	ind = index - 1;
+	CreateAssertWindow(NULL, hPrevInst, lpszArgs, nWinMode);
+}
+
 LRESULT CALLBACK WndProcFatalError(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -135,11 +123,11 @@ LRESULT CALLBACK WndProcFatalError(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 	case WM_COMMAND:
 		if (lParam == (LPARAM)hBtnAbort)
 		{
-			exit(return_value);
+			exit(returnValue);
 		}
 		break;
 	case WM_CREATE:
-		hBtnAbort = CreateWindow("button", "Ïðåðâàòü",
+		hBtnAbort = CreateWindow("button", "ÐŸÑ€ÐµÑ€Ð²Ð°Ñ‚ÑŒ",
 			WS_CHILD | WS_VISIBLE | WS_BORDER,
 			300, 200, 120, 30, hWnd, 0, hInst, NULL);
 		ShowWindow(hBtnAbort, SW_SHOWNORMAL);
@@ -154,16 +142,16 @@ LRESULT CALLBACK WndProcFatalError(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		TextOutA(hdc, 10, 10, "FILE : ", strlen("FILE : "));
-		TextOutA(hdc, 50, 10, FileName, strlen(FileName));
+		TextOutA(hdc, 50, 10, Assert[ind].FileName, strlen(Assert[ind].FileName));
 
 		char Num[100];
-		_itoa(NumberLine, Num, 100);
+		_itoa(Assert[ind].NumberLine, Num, 100);
 		TextOutA(hdc, 10, 30, "LINE : ", strlen("LINE : "));
 		TextOutA(hdc, 50, 30, Num, strlen(Num));
 
-		TextOutA(hdc, 10, 50, Message, strlen(Message));
+		TextOutA(hdc, 10, 50, Assert[ind].message, strlen(Assert[ind].message));
 
-		_itoa(return_value, Num, 100);
+		_itoa(returnValue, Num, 100);
 		TextOutA(hdc, 10, 70, "return ", strlen("return "));
 		TextOutA(hdc, 50, 70, Num, strlen(Num));
 
@@ -173,12 +161,10 @@ LRESULT CALLBACK WndProcFatalError(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-
-int WINAPI WinFatalError(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpszCmdParam, _In_ int nCmdShow)
+void CreateFatalErrorWindow(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpszCmdParam, _In_ int nCmdShow)
 {
 	WNDCLASS wc;
 	HWND Fe;
-	
 	wc.cbClsExtra = wc.cbWndExtra = 0;
 	wc.style = 0;
 	wc.lpfnWndProc = WndProcFatalError;
@@ -195,8 +181,6 @@ int WINAPI WinFatalError(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInsta
 	ShowWindow(Fe, SW_NORMAL);
 	UpdateWindow(Fe);
 
-	Ign = 0;
-
 	MSG msg;
 	while (GetMessage(&msg, 0, 0, 0))
 	{
@@ -204,4 +188,13 @@ int WINAPI WinFatalError(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInsta
 		DispatchMessage(&msg);
 	}
 	return msg.wParam;
+}
+
+int WINAPI WinFatalError(ASSERT* MyAssert, int CountAssert, int Return_value, int index)
+{
+	Assert = MyAssert;
+	ind = index - 1;
+	returnValue = Return_value;
+	CreateFatalErrorWindow(NULL, hPrevInst, lpszArgs, nWinMode);
+	
 }
