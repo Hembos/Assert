@@ -12,16 +12,12 @@ typedef struct
 	int NumberLine;
 	char* FileName;
 	char* message;
-	int index;
-	int CountAssert;
 	BOOL ignore;
-	int return_value;
 } ASSERT;
 
 void My_Assert(char* File, int Line, char* message);
 void Fatal_Error(char* File, int Line, char* message, int return_value);
 void SystemOpen(int CountAssert);
 void SystemClose();
-ASSERT* Temp(ASSERT* MyAssert, BOOL FatalError);
-int WINAPI WinAssert(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpszCmdParam, _In_ int nCmdSh);
-int WINAPI WinFatalError(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpszCmdParam, _In_ int nCmdShow);
+int WINAPI WinAssert(ASSERT* MyAssert, int CountAssert, int index);
+int WINAPI WinFatalError(ASSERT* MyAssert, int CountAssert, int Return_value, int index);
