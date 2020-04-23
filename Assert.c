@@ -1,21 +1,18 @@
-#include "Header.h"
+#include "Assert.h"
 
 ASSERT* MyAssert;
-HINSTANCE Assert;
-HINSTANCE FatalError;
-HINSTANCE hPrevInst;
-LPSTR lpszArgs;
 int nWinMode;
+int index = 0;
+int CountAssert;
 
-void SystemOpen(int CountAssert)
+void SystemOpen(int Count)
 {
-	MyAssert = malloc(CountAssert * sizeof(ASSERT));
-	MyAssert->index = 0;
-	MyAssert->CountAssert = CountAssert;
-	for (int i = 0; i < CountAssert; i++)
+	MyAssert = malloc(Count * sizeof(ASSERT));
+	for (int i = 0; i < Count; i++)
 	{
 		MyAssert[i].ignore = FALSE;
 	}
+	CountAssert = Count;
 }
 
 void SystemClose()
@@ -25,26 +22,23 @@ void SystemClose()
 
 void My_Assert(char* File, int Line, char* message)
 {
-	if (MyAssert[MyAssert->index].ignore != TRUE)
+	if (MyAssert[index].ignore != TRUE)
 	{
-		MyAssert[MyAssert->index].FileName = File;
-		MyAssert[MyAssert->index].NumberLine = Line;
-		MyAssert[MyAssert->index].message = message;
+		MyAssert[index].FileName = File;
+		MyAssert[index].NumberLine = Line;
+		MyAssert[index].message = message;
 
-		MyAssert = Temp(MyAssert, FALSE);
-		MyAssert->index++;
-		WinAssert(Assert, hPrevInst, lpszArgs, nWinMode);
+		index++;
+		WinAssert(MyAssert, CountAssert, index);
 	}
 	
 }
 
 void Fatal_Error(char* File, int Line, char* message, int return_value)
 {
-	MyAssert[MyAssert->index].FileName = File;
-	MyAssert[MyAssert->index].NumberLine = Line;
-	MyAssert[MyAssert->index].message = message;
-	MyAssert[MyAssert->index].return_value = return_value;
-	MyAssert = Temp(MyAssert, TRUE);
-	WinFatalError(FatalError, hPrevInst, lpszArgs, nWinMode);
-	MyAssert->index++;
+	MyAssert[index].FileName = File;
+	MyAssert[index].NumberLine = Line;
+	MyAssert[index].message = message;
+	WinFatalError(MyAssert, CountAssert, return_value, index);
+	index++;
 }
